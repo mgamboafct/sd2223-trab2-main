@@ -1,5 +1,6 @@
 package sd2223.trab2.servers.soap;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executors;
 import java.util.logging.Logger;
@@ -34,12 +35,13 @@ public class AbstractSoapServer<T> extends AbstractServer {
 	
 	protected void start() {
 		try {
-			var server = HttpsServer.create(new InetSocketAddress(IP.hostname(), port), 0);
+			String ip = InetAddress.getLocalHost().getHostAddress();
+			var server = HttpsServer.create(new InetSocketAddress(ip, port), 0);
 
 			server.setExecutor(Executors.newCachedThreadPool());
 			server.setHttpsConfigurator(new HttpsConfigurator(SSLContext.getDefault()));
 
-			var endpoint = Endpoint.create(new SoapUsersWebService());
+			var endpoint = Endpoint.create(webservice);
 			endpoint.publish(server.createContext("/soap"));
 
 			server.start();
