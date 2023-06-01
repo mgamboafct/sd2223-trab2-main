@@ -35,8 +35,7 @@ public class AbstractSoapServer<T> extends AbstractServer {
 	
 	protected void start() {
 		try {
-			String ip = InetAddress.getLocalHost().getHostAddress();
-			var server = HttpsServer.create(new InetSocketAddress(ip, port), 0);
+			var server = HttpsServer.create(new InetSocketAddress(IP.hostname(), port), 0);
 
 			server.setExecutor(Executors.newCachedThreadPool());
 			server.setHttpsConfigurator(new HttpsConfigurator(SSLContext.getDefault()));
