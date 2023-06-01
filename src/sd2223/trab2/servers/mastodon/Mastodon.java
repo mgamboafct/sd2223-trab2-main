@@ -40,6 +40,8 @@ public class Mastodon implements Feeds {
 	static final String ACCOUNT_UNFOLLOW_PATH = "/api/v1/accounts/%s/unfollow";
 	
 	private static final int HTTP_OK = 200;
+	private static final int HTTP_OK_VOID = 204;
+	private static final int HTTP_NOT_FOUND = 404;
 
 	protected OAuth20Service service;
 	protected OAuth2AccessToken accessToken;
@@ -94,6 +96,8 @@ public class Mastodon implements Feeds {
 		try {
 			final OAuthRequest request = new OAuthRequest(Verb.GET, getEndpoint(TIMELINES_PATH));
 
+			request.addQuerystringParameter("time", String.valueOf(time));
+
 			service.signRequest(accessToken, request);
 
 			Response response = service.execute(request);
@@ -102,7 +106,12 @@ public class Mastodon implements Feeds {
 				List<PostStatusResult> res = JSON.decode(response.getBody(), new TypeToken<List<PostStatusResult>>() {
 				});
 
-				return ok(res.stream().map(PostStatusResult::toMessage).toList());
+				List<Message> filteredMessages = res.stream()
+						.filter(msg -> msg.getCreationTime() > time)
+						.map(PostStatusResult::toMessage)
+						.toList();
+
+				return ok(filteredMessages);
 			}
 		} catch (Exception x) {
 			x.printStackTrace();
@@ -139,6 +148,10 @@ public class Mastodon implements Feeds {
 			if (response.getCode() == HTTP_OK) {
 				var res = JSON.decode(response.getBody(), PostStatusResult.class);
 				return ok(res.toMessage());
+			}
+
+			if (response.getCode() == HTTP_NOT_FOUND) {
+				return error(NOT_FOUND);
 			}
 		} catch (Exception x) {
 			x.printStackTrace();
