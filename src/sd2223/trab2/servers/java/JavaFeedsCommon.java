@@ -18,7 +18,7 @@ import sd2223.trab2.api.java.Result;
 import sd2223.trab2.servers.Domain;
 
 public abstract class JavaFeedsCommon<T extends Feeds>  implements Feeds {
-	private static final long FEEDS_MID_PREFIX= 1_000_000_000;
+	private static final long FEEDS_MID_PREFIX= 1_000_000;
 
 	protected AtomicLong serial = new AtomicLong(Domain.uuid() * FEEDS_MID_PREFIX);
 
@@ -43,10 +43,13 @@ public abstract class JavaFeedsCommon<T extends Feeds>  implements Feeds {
 		var preconditionsResult = preconditions.postMessage(user, pwd, msg);
 		if( ! preconditionsResult.isOK() )
 			return preconditionsResult;
-					
-		Long mid = serial.incrementAndGet();
-		msg.setId(mid);
-		msg.setCreationTime(System.currentTimeMillis());
+
+		long mid = msg.getId();
+		if(mid == -1) {
+			mid = serial.incrementAndGet();
+			msg.setId(mid);
+			msg.setCreationTime(System.currentTimeMillis());
+		}
 
 		FeedInfo ufi = feeds.computeIfAbsent(user, FeedInfo::new );
 		synchronized (ufi.user()) {

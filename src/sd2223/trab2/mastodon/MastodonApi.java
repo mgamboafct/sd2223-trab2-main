@@ -1,4 +1,4 @@
-package sd2223.trab2.servers.mastodon;
+package sd2223.trab2.mastodon;
 
 import com.github.scribejava.core.builder.api.DefaultApi20;
 

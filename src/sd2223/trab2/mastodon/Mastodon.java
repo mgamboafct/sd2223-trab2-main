@@ -1,10 +1,11 @@
-package sd2223.trab2.servers.mastodon;
+package sd2223.trab2.mastodon;
 
 import sd2223.trab2.api.java.Feeds;
 import sd2223.trab2.api.Message;
 import sd2223.trab2.api.java.Result;
-import sd2223.trab2.servers.mastodon.msgs.PostStatusArgs;
-import sd2223.trab2.servers.mastodon.msgs.PostStatusResult;
+import sd2223.trab2.mastodon.msgs.MastodonAccount;
+import sd2223.trab2.mastodon.msgs.PostStatusArgs;
+import sd2223.trab2.mastodon.msgs.PostStatusResult;
 import com.github.scribejava.core.builder.ServiceBuilder;
 import com.github.scribejava.core.model.OAuth2AccessToken;
 import com.github.scribejava.core.model.OAuthRequest;
@@ -40,7 +41,6 @@ public class Mastodon implements Feeds {
 	static final String ACCOUNT_UNFOLLOW_PATH = "/api/v1/accounts/%s/unfollow";
 	
 	private static final int HTTP_OK = 200;
-	private static final int HTTP_OK_VOID = 204;
 	private static final int HTTP_NOT_FOUND = 404;
 
 	protected OAuth20Service service;
@@ -116,7 +116,7 @@ public class Mastodon implements Feeds {
 		} catch (Exception x) {
 			x.printStackTrace();
 		}
-		return error(Result.ErrorCode.INTERNAL_ERROR);
+		return error(INTERNAL_ERROR);
 	}
 
 	
@@ -161,13 +161,24 @@ public class Mastodon implements Feeds {
 	@Override
 	public Result<Void> subUser(String user, String userSub, String pwd) {
 		try {
-			final OAuthRequest request = new OAuthRequest(Verb.POST, getEndpoint(ACCOUNT_FOLLOW_PATH, userSub));
+			final OAuthRequest searchRequest = new OAuthRequest(Verb.GET, getEndpoint(SEARCH_ACCOUNTS_PATH));
+			searchRequest.addQuerystringParameter("q", userSub);
+			service.signRequest(accessToken, searchRequest);
+			Response searchResponse = service.execute(searchRequest);
 
-			service.signRequest(accessToken, request);
+			if (searchResponse.getCode() == HTTP_OK) {
+				List<MastodonAccount> accounts = JSON.decode(searchResponse.getBody(), new TypeToken<List<MastodonAccount>>() {});
 
-			Response response = service.execute(request);
-			if (response.getCode() == HTTP_OK) {
-				return ok(null);
+				if (!accounts.isEmpty()) {
+					Long userSubId = accounts.get(0).getId();
+					final OAuthRequest followRequest = new OAuthRequest(Verb.POST, getEndpoint(ACCOUNT_FOLLOW_PATH, userSubId));
+					service.signRequest(accessToken, followRequest);
+					Response followResponse = service.execute(followRequest);
+
+					if (followResponse.getCode() == HTTP_OK) {
+						return ok();
+					}
+				}
 			}
 		} catch (Exception x) {
 			x.printStackTrace();
@@ -178,13 +189,24 @@ public class Mastodon implements Feeds {
 	@Override
 	public Result<Void> unsubscribeUser(String user, String userSub, String pwd) {
 		try {
-			final OAuthRequest request = new OAuthRequest(Verb.POST, getEndpoint(ACCOUNT_UNFOLLOW_PATH, userSub));
+			final OAuthRequest searchRequest = new OAuthRequest(Verb.GET, getEndpoint(SEARCH_ACCOUNTS_PATH));
+			searchRequest.addQuerystringParameter("q", userSub);
+			service.signRequest(accessToken, searchRequest);
+			Response searchResponse = service.execute(searchRequest);
 
-			service.signRequest(accessToken, request);
+			if (searchResponse.getCode() == HTTP_OK) {
+				List<MastodonAccount> accounts = JSON.decode(searchResponse.getBody(), new TypeToken<List<MastodonAccount>>() {});
 
-			Response response = service.execute(request);
-			if (response.getCode() == HTTP_OK) {
-				return ok();
+				if (!accounts.isEmpty()) {
+					Long userSubId = accounts.get(0).getId();
+					final OAuthRequest unfollowRequest = new OAuthRequest(Verb.POST, getEndpoint(ACCOUNT_UNFOLLOW_PATH, userSubId));
+					service.signRequest(accessToken, unfollowRequest);
+					Response unfollowResponse = service.execute(unfollowRequest);
+
+					if (unfollowResponse.getCode() == HTTP_OK) {
+						return ok();
+					}
+				}
 			}
 		} catch (Exception x) {
 			x.printStackTrace();

@@ -1,4 +1,4 @@
-package sd2223.trab2.servers.mastodon.msgs;
+package sd2223.trab2.mastodon.msgs;
 
 import sd2223.trab2.api.Message;
 import sd2223.trab2.servers.Domain;
